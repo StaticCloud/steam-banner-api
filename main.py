@@ -7,6 +7,6 @@ client = SteamAPI()
 
 @app.get("/{user_id}")
 def get_user_achievements(user_id: str):
-    response = client.get_owned_game_ids(user_id)
+    response = client.get_completed_game_data(user_id)
     return response
 
