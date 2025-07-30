@@ -38,7 +38,7 @@ class SteamAPI():
                 pass
             return None
         
-        with ThreadPoolExecutor(len(game_ids)) as executor:
+        with ThreadPoolExecutor(10) as executor:
             futures = [executor.submit(check_completion, game_id) for game_id in game_ids]
 
             for future in as_completed(futures):
