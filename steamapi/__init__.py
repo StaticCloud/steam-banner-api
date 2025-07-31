@@ -13,9 +13,6 @@ class SteamAPI():
         try:
             url = f'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={self.api_key}&steamid={steam_id}&format=json'
             res = requests.get(url, 5).json()
-
-            print(res)
-
             game_ids = [game['appid'] for game in res['response']['games']]
 
             return game_ids
@@ -50,6 +47,16 @@ class SteamAPI():
                     completed_game_ids.append(result)
             
         return completed_game_ids 
+
+    
+    def get_player_profile(self, steam_id: str):
+        try:
+            url = f"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={self.api_key}&steamids={steam_id}"
+            res = requests.get(url, 5).json()
+
+            return res
+        except:
+            pass
 
     def validate_completion_status(self, achievements: list):
             return all(achievement['achieved'] == 1 for achievement in achievements)
