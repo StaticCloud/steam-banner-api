@@ -51,7 +51,6 @@ class SteamAPI():
     
     def get_player_profile(self, steam_id: str):
         try:
-
             url = f"http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={self.api_key}&steamids={steam_id}"
             res = requests.get(url, 5).json()
 
