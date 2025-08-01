@@ -10,7 +10,7 @@ game_router = APIRouter()
 banner_helper = BannerHelper()
 
 class Body(BaseModel):
-    game_ids: list[str]
+    game_ids: list[int]
 
 @game_router.get("/")
 def get_header_by_game_id(body: Body, bannertype: str):
