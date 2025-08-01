@@ -1,4 +1,6 @@
-# Steam Banner API
+![Steam Banner API](./static/readme-banner.png)
+
+## Table of Contents
 
 - [Description](#description)
 - [Usage](#usage)
