@@ -30,9 +30,12 @@ An API for obtaining Steam game banners with custom search filters. It provides 
 - `bannertype`
 
 ### Search by User ID
-**Endpoint:** `/api/profile?...`
+**Endpoint:** `/api/profile/{user_id}?...`
 
 **Method:** `GET`
+
+**Required Path Parameters:** 
+- ``user_id``
 
 **Required Query Parameters:**
 - `bannertype`
