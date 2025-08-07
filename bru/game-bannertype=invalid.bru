@@ -1,0 +1,25 @@
+meta {
+  name: /game?bannertype=invalid
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://127.0.0.1:8000/api/game?bannertype=0
+  body: json
+  auth: inherit
+}
+
+params:query {
+  bannertype: 0
+}
+
+body:json {
+  {
+    "game_ids": ["banana", "apple", "orange"]
+  }
+}
+
+assert {
+  res.status: eq 422
+}

@@ -1,5 +1,5 @@
 meta {
-  name: Get Game Banners
+  name: /game?bannertype=boxart
   type: http
   seq: 1
 }
@@ -14,8 +14,17 @@ params:query {
   bannertype: boxart
 }
 
+headers {
+  hx-request: true
+}
+
 body:json {
   {
     "game_ids": [1567440, 1599020, 1599020]
   }
+}
+
+assert {
+  res.status: eq 200
+  res.body.length: eq 3
 }
