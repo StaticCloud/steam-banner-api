@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
+	"steam-banner-api/structs"
+	"steam-banner-api/utils"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
@@ -39,8 +42,35 @@ func (h *SteamApiHandler) GetOwnedGameBanners(ctx *gin.Context) {
 		return
 	}
 
-	var result map[string]any
+	var result structs.OwnedGameBannerRes
 	json.Unmarshal(body, &result)
 
-	ctx.JSON(http.StatusOK, result)
+	var games []structs.GameInfoRes = result.Response.Games
+
+	gameIdChan := make(chan []string)
+
+	gameIds := []string{}
+
+	// Segment Size =/= # of Segments
+	segmentSize := int(math.Ceil(float64(len(games)) / 4))
+
+	for i := range 4 {
+		go func() {
+			fmt.Printf("Obtaining AppIDs [%d/4]\n", i+1)
+
+			ids := []string{}
+
+			// Use the segment size to calculate the upper range
+			upperRange := (i * segmentSize) + segmentSize
+
+			for j := i * segmentSize; j < min(upperRange, len(games)); j++ {
+				ids = append(ids, utils.GetHeaderUrl(games[j].AppID))
+			}
+
+			gameIdChan <- ids
+		}()
+		gameIds = append(gameIds, <-gameIdChan...)
+	}
+
+	ctx.JSON(http.StatusOK, gameIds)
 }
