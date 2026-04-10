@@ -20,10 +20,10 @@ func CreateRouter(apiHandler *apiHandlers.SteamApiHandler) *gin.Engine {
 			{
 				sid := profile.Group("/:sid")
 				{
-					sid.GET("/headers", apiHandler.GetGameHeaders)
-					sid.GET("/box-art", apiHandler.GetGameBoxart)
+					sid.GET("/", apiHandler.SteamIDSearch)
 				}
 			}
+			v1.GET("/game-ids", apiHandler.GameIdSearch)
 		}
 	}
 

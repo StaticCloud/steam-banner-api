@@ -1,5 +1,9 @@
 package structs
 
+type GameIDSearchBody struct {
+	Games []int `json:"games"`
+}
+
 type OwnedGameBannerRes struct {
 	Response struct {
 		GameCount int           `json:"game_count"`
