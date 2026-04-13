@@ -23,33 +23,61 @@ func InitSteamApiHandler(token string) *SteamApiHandler {
 	}
 }
 
-func (h *SteamApiHandler) SteamIDSearch(c *gin.Context) {
-	filter := func(gameId int) string {
-		switch c.Query("filter") {
-		case "box-art":
-			return utils.GetBoxArtUrl(gameId)
-		case "banner":
-			return utils.GetHeaderUrl(gameId)
-		default:
-			return utils.GetHeaderUrl(gameId)
-		}
+func filterFactory(filter string) func(int) string {
+	switch filter {
+	case "box-art":
+		return utils.GetBoxArtUrl
+	case "banner":
+		return utils.GetHeaderUrl
+	default:
+		return utils.GetHeaderUrl
+	}
+}
+
+func processPayload(payload []int, filter func(int) string) []string {
+	var banners = []string{}
+
+	channel := make(chan []string)
+
+	segmentSize := int(math.Ceil(float64(len(payload)) / 4))
+
+	for i := range 4 {
+		go func() {
+			ids := []string{}
+
+			// Use the segment size to calculate the upper range
+			upperRange := (i * segmentSize) + segmentSize
+
+			for j := i * segmentSize; j < min(upperRange, len(payload)); j++ {
+				ids = append(ids, filter(payload[j]))
+			}
+
+			channel <- ids
+
+			fmt.Printf("Obtaining Banners [%d/4]\n", i+1)
+		}()
+		banners = append(banners, <-channel...)
 	}
 
+	return banners
+}
+
+func (h *SteamApiHandler) SteamIDSearch(c *gin.Context) {
 	steamId := c.Param("sid")
 
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json", h.Token, steamId)
-	res, err := http.Get(url)
+	ownedGames, ownedGamesError := http.Get(url)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if ownedGamesError != nil {
+		c.JSON(http.StatusInternalServerError, ownedGamesError.Error())
 		return
 	}
 
-	defer res.Body.Close()
+	defer ownedGames.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	body, bodyError := io.ReadAll(ownedGames.Body)
+	if bodyError != nil {
+		c.JSON(http.StatusInternalServerError, bodyError.Error())
 		return
 	}
 
@@ -57,81 +85,26 @@ func (h *SteamApiHandler) SteamIDSearch(c *gin.Context) {
 
 	json.Unmarshal(body, &result)
 
-	var games []structs.GameInfoRes = result.Response.Games
+	gameIds := []int{}
 
-	gameIdChan := make(chan []string)
-
-	gameIds := []string{}
-
-	// Segment Size =/= # of Segments
-	segmentSize := int(math.Ceil(float64(len(games)) / 4))
-
-	for i := range 4 {
-		go func() {
-			fmt.Printf("Obtaining AppIDs [%d/4]\n", i+1)
-
-			ids := []string{}
-
-			// Use the segment size to calculate the upper range
-			upperRange := (i * segmentSize) + segmentSize
-
-			for j := i * segmentSize; j < min(upperRange, len(games)); j++ {
-				ids = append(ids, filter(games[j].AppID))
-			}
-
-			gameIdChan <- ids
-		}()
-		gameIds = append(gameIds, <-gameIdChan...)
+	for _, v := range result.Response.Games {
+		gameIds = append(gameIds, v.AppID)
 	}
 
-	c.JSON(http.StatusOK, gameIds)
+	response := processPayload(gameIds, filterFactory(c.Query("filter")))
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *SteamApiHandler) GameIdSearch(c *gin.Context) {
 	var body structs.GameIDSearchBody
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	fmt.Println(body)
+	response := processPayload(body.Games, filterFactory(c.Query("filter")))
 
-	filter := func(gameId int) string {
-		switch c.Query("filter") {
-		case "box-art":
-			return utils.GetBoxArtUrl(gameId)
-		case "banner":
-			return utils.GetHeaderUrl(gameId)
-		default:
-			return utils.GetHeaderUrl(gameId)
-		}
-	}
-
-	gameIdChan := make(chan []string)
-
-	gameIds := []string{}
-
-	// Segment Size =/= # of Segments
-	segmentSize := int(math.Ceil(float64(len(body.Games)) / 4))
-
-	for i := range 4 {
-		go func() {
-			fmt.Printf("Obtaining AppIDs [%d/4]\n", i+1)
-
-			ids := []string{}
-
-			// Use the segment size to calculate the upper range
-			upperRange := (i * segmentSize) + segmentSize
-
-			for j := i * segmentSize; j < min(upperRange, len(body.Games)); j++ {
-				ids = append(ids, filter(body.Games[j]))
-			}
-
-			gameIdChan <- ids
-		}()
-		gameIds = append(gameIds, <-gameIdChan...)
-	}
-
-	c.JSON(http.StatusOK, gameIds)
+	c.JSON(http.StatusOK, response)
 }
