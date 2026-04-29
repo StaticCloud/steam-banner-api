@@ -1,0 +1,7 @@
+services:
+  server:
+    image: steam-banner-api
+    ports:
+      - 8080:8080
+    environment:
+      - KEY=${KEY}
