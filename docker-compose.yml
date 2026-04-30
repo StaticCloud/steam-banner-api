@@ -1,7 +1,16 @@
 services:
   server:
     image: steam-banner-api
-    ports:
-      - 8080:8080
+    networks:
+      - traefik-public
     environment:
       - KEY=${KEY}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.steam-banner-api.rule=Host(`steambannerapi.com`)"
+      - "traefik.http.routers.steam-banner-api.entrypoints=websecure"
+      - "traefik.http.routers.steam-banner-api.tls=true" 
+
+networks: 
+  traefik-public:
+    external: true
